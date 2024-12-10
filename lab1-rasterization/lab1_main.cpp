@@ -78,9 +78,9 @@ void initialize()
 	// Define the colors for each of the three vertices of the triangle
 	const float colors[] = {
 		//   R     G     B
-		1.0f, 1.0f, 1.0f, // White
-		1.0f, 1.0f, 1.0f, // White
-		1.0f, 1.0f, 1.0f  // White
+		1.0f, 0.0f, 0.0f, // White -> Red
+		0.0f, 1.0f, 0.0f, // White -> Green
+		0.0f, 0.0f, 1.0f  // White -> Blue
 	};
 	// Create a handle for the vertex color buffer
 	GLuint colorBuffer;
@@ -103,7 +103,7 @@ void initialize()
 	// Makes positionBuffer the current array buffer for subsequent calls.
 	glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
 	// Attaches positionBuffer to vertexArrayObject, in the 0th attribute location
-	glVertexAttribPointer(0, 3, GL_FLOAT, false /*normalized*/, 0 /*stride*/, 0 /*offset*/);
+	glVertexAttribPointer(0 /*index*/, 3 /*size*/, GL_FLOAT /*type*/, false /*normalized*/, 0 /*stride*/, 0 /*offset*/);
 	// Makes colorBuffer the current array buffer for subsequent calls.
 	glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
 	// Attaches colorBuffer to vertexArrayObject, in the 1st attribute location
@@ -204,7 +204,7 @@ void display(void)
 	glViewport(0, 0, w, h); // Set viewport
 
 	glClearColor(g_clearColor[0], g_clearColor[1], g_clearColor[2], 1.0); // Set clear color
-	glClear(GL_BUFFER); // Clears the color buffer and the z-buffer
+	glClear(/*GL_BUFFER*/GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clears the color buffer and the z-buffer
 	                    // Instead of glClear(GL_BUFFER) the call should be glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
 	// We disable backface culling for this tutorial, otherwise care must be taken with the winding order
