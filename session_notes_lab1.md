@@ -42,5 +42,20 @@ fragment_color = vec4(in_color.rgb, 1);
 ```
 
 ### Doubts
-- What does bind actully means?
-- Are this buffers allocated in heap memory?
+- What does bind actully means? > As OpenGl is a State machine, this set the current buffer of OpenGL to point to the buffer we need to configure
+- Are this buffers allocated in heap memory? > Yes, they are going to be sent to the VRAM of the GPU
+
+## Session 2024-12-12
+
+The creation of shaders in OpenGL follows this protocol (basically)
+1. Create a shader (vertex / fragment), that is a pointer to the shaders.
+2. Load the text files that contains the shading instructions
+3. Define which the instructions as the source of which shader
+4. Compile the shaders, and check for errors
+5. Create the shader program that will hold the vertex and fragment shaders
+6. Attach the compiled shaders to the shader program
+7. Delete the pointer to the shaders, since the shader program will keep the pointer to the shaders alive
+8. Link together all the shaders of the shader program
+
+### Doubts
+- Are this `GLint` and others alike pointers?
