@@ -58,4 +58,12 @@ The creation of shaders in OpenGL follows this protocol (basically)
 8. Link together all the shaders of the shader program
 
 ### Doubts
-- Are this `GLint` and others alike pointers?
+- Are this `GLint` and others alike pointers? 
+Yes, and they can also be written as `unsigned int`
+
+## Session 2024-12-17
+
+**Takeaways**
+- Defining buffers and Initializing shaders are two completly different task. Defining buffers allows us to tell OpenGL what type of data we are sending to the GPU, and what is the lay out of it [position, color, normal, textureCoodinate]. And initializing shaders allows us to tell OpenGL how do we want the data to be render, positions and colors.
+- All of this (Defining buffer and initializing shaders) happens in the Application Stage of the Graphics Pipeline. Then, the instruction defined in the vertex shader are executed in the Geometry Processing stage and the fragment shader in the Pixel Processing stage.
+- `uniforms` are variables that remain constans throughout the execution of the draw call. We can set a uniform from the CPU on the GPU by defining it in the shader like `uniform type name = value;`. The CPU defines the uniforms before telling OpenGL to do a Draw call.
