@@ -32,6 +32,9 @@ glm::vec3 g_triangleColor = { 1, 1, 1 };
 // in this example.
 GLuint vertexArrayObject;
 
+//unsigned int
+GLuint myVertexArrayObject;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Shader programs
 ///////////////////////////////////////////////////////////////////////////////
@@ -57,18 +60,18 @@ void initialize()
 		//	 X      Y     Z
 		0.0f,  0.5f,  1.0f, // v0
 		-0.5f, -0.5f, 1.0f, // v1
-		0.5f,  -0.5f, 1.0f  // v2
+		0.5f,  -0.5f, 1.0f,  // v2
 	};
 	// Create a handle for the position vertex buffer object
 	// See OpenGL Spec §2.9 Buffer Objects
 	// - http://www.cse.chalmers.se/edu/course/TDA361/glspec30.20080923.pdf#page=54
-	GLuint positionBuffer;
+	GLuint positionBuffer; // Pointer to a buffer
 	glGenBuffers(1, &positionBuffer);
 	// Set the newly created buffer as the current one
 	glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
 	// Send the vertex position data to the current buffer
 	glBufferData(GL_ARRAY_BUFFER, labhelper::array_length(positions) * sizeof(float), positions,
-	             GL_STATIC_DRAW);
+		GL_STATIC_DRAW);
 
 	//////////////////////////////////////////////////////////////////////////////
 	// Vertex colors
@@ -80,7 +83,7 @@ void initialize()
 		//   R     G     B
 		1.0f, 0.0f, 0.0f, // White -> Red
 		0.0f, 1.0f, 0.0f, // White -> Green
-		0.0f, 0.0f, 1.0f  // White -> Blue
+		0.0f, 0.0f, 1.0f,  // White -> Blue
 	};
 	// Create a handle for the vertex color buffer
 	GLuint colorBuffer;
@@ -96,6 +99,10 @@ void initialize()
 	// See OpenGL Spec §2.10
 	// - http://www.cse.chalmers.se/edu/course/TDA361/glspec30.20080923.pdf#page=64
 	//////////////////////////////////////////////////////////////////////////////
+
+	//David
+	GLintptr vertex_color_offset = 3 * sizeof(float);
+
 	glGenVertexArrays(1, &vertexArrayObject);
 	// Bind the vertex array object
 	// The following calls will affect this vertex array object.
@@ -107,7 +114,7 @@ void initialize()
 	// Makes colorBuffer the current array buffer for subsequent calls.
 	glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
 	// Attaches colorBuffer to vertexArrayObject, in the 1st attribute location
-	glVertexAttribPointer(1, 3, GL_FLOAT, false /*normalized*/, 0 /*stride*/, 0 /*offset*/);
+	glVertexAttribPointer(1, 3, GL_FLOAT, false /*normalized*/, 0 /*stride*/, 0  /* offset*/); //(GLvoid*)vertex_color_offset
 	glEnableVertexAttribArray(0); // Enable the vertex position attribute
 	glEnableVertexAttribArray(1); // Enable the vertex color attribute
 
@@ -115,8 +122,54 @@ void initialize()
 	// Task 4: Add two new triangles. First by creating another vertex array
 	//		   object, and then by adding a triangle to an existing VAO.
 	//////////////////////////////////////////////////////////////////////////////
+	const float positions2[] = {
+		//	 X      Y     Z
+		0.1f,  0.5f,  1.0f, // v0
+		0.8f,  -0.5f,  1.0f, // v1
+		0.8f,  0.5f,  1.0f,  // v2
+		//0.0f, 0.6f, 1.0f, // t0v0
+		//0.5f, 0.9f, 1.0f, // t0v1
+		//-0.5f, 0.8f, 1.0f, // t0v2
+		0.0f,  0.6f,  1.0f, // v0
+		0.8f,  0.8f,  1.0f, // v1
+		-0.6f,  0.8f,  1.0f  // v2
+
+	};
+
+	const float colors2[] = {
+		//   R     G     B
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f
+	};
+
+	GLuint positions2Buffer;
+	GLuint colors2Buffer;
+
+	glGenBuffers(1, &positions2Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, positions2Buffer);
+	glBufferData(GL_ARRAY_BUFFER, labhelper::array_length(positions2) * sizeof(float), positions2, GL_STATIC_DRAW);
+
+	glGenBuffers(1, &colors2Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, colors2Buffer);
+	glBufferData(GL_ARRAY_BUFFER, labhelper::array_length(colors2) * sizeof(float), colors2, GL_STATIC_DRAW);
 
 
+	glGenVertexArrays(1, &myVertexArrayObject);
+	glBindVertexArray(myVertexArrayObject);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, positions2Buffer);
+	glVertexAttribPointer(0 /*index*/, 3 /*size*/, GL_FLOAT /*type*/, false /*normalized*/, 0 /*stride*/, 0 /*offset*/);
+
+	
+	glBindBuffer(GL_ARRAY_BUFFER, colors2Buffer);
+	glVertexAttribPointer(1 /*index*/, 3 /*size*/, GL_FLOAT /*type*/, false /*normalized*/, 0 /*stride*/, 0 /*offset*/);
+	
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 
 	///////////////////////////////////////////////////////////////////////////
 	// Create shaders
@@ -223,6 +276,9 @@ void display(void)
 
 
 	// Task 4: Render the second VAO
+	glBindVertexArray(myVertexArrayObject);
+	glDrawArrays(GL_TRIANGLES, 0, 6); // Render 2 triangle
+	
 	// Task 5: Set the `triangleColor` uniform to white
 
 	glUseProgram(0); // "unsets" the current shader program. Not really necessary.
