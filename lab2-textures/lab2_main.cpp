@@ -46,7 +46,7 @@ GLuint shaderProgram;
 GLuint positionBuffer, colorBuffer, indexBuffer, vertexArrayObject;
 
 GLuint texcoordBuffer;
-
+GLuint texture;
 
 
 
@@ -93,16 +93,16 @@ void initialize()
 	//			Enable the vertex attrib array.
 	///////////////////////////////////////////////////////////////////////////
 
-	const int texcoords[] = {
+	float texcoords[] = {
 		0.0f, 0.0f,
-		0.0f, 0.1f,
+		0.0f, 1.0f,
 		1.0f, 1.0f,
 		1.0f, 0.0f
 	};
 
 	glGenBuffers(1, &texcoordBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, texcoordBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, labhelper::array_length(texcoords) * sizeof(float), texcoords, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, texcoordBuffer);
+	glBufferData(GL_ARRAY_BUFFER, labhelper::array_length(texcoords) * sizeof(float), texcoords, GL_STATIC_DRAW);
 
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
 	glEnableVertexAttribArray(1);
@@ -131,6 +131,24 @@ void initialize()
 	//			Load Texture
 	//************************************
 	// Task 2
+	int w, h, comp;
+	unsigned char* image = stbi_load("../scenes/textures/asphalt.jpg", &w, &h, &comp, STBI_rgb_alpha);
+	
+
+	glGenTextures(1, &texture);
+
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+	free(image);
+
+	// Set bahaviour when UV is out of range
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// Set behaviour for filtering
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
 }
 
 
@@ -173,6 +191,10 @@ void display(void)
 	glUniform3f(loc, camera_pan, 10, 0);
 
 	// Task 3.1
+	// Telling OpenGL what texture to use
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
 
 	glBindVertexArray(vertexArrayObject);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

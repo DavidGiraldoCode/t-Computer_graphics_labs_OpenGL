@@ -24,5 +24,5 @@ void main()
 	gl_Position = projectionMatrix * pos;
 
 	// Task 1: Copy the value received for the texcoord to the out variable sent to the fragment shader
-	texCoord = texCoordIn;
+	texCoord = vec2(texCoordIn.xy);
 }
