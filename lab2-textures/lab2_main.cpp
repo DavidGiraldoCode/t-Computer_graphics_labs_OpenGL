@@ -95,8 +95,8 @@ void initialize()
 
 	float texcoords[] = {
 		0.0f, 0.0f,
-		0.0f, 1.0f,
-		1.0f, 1.0f,
+		0.0f, 15.0f,
+		1.0f, 15.0f,
 		1.0f, 0.0f
 	};
 
@@ -142,12 +142,18 @@ void initialize()
 	free(image);
 
 	// Set bahaviour when UV is out of range
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	//GL_CLAMP_TO_EDGE);
 
+	glGenerateMipmap(GL_TEXTURE_2D);
 	// Set behaviour for filtering
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		//GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+
 
 }
 
