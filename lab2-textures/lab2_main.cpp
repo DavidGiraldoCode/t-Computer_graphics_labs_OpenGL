@@ -114,8 +114,12 @@ void initialize()
 	// Create the element array buffer object
 	///////////////////////////////////////////////////////////////////////////
 	const int indices[] = {
-		0, 1, 3, // Triangle 1
-		1, 2, 3  // Triangle 2
+		//0, 1, 3, // Triangle 1
+		//1, 2, 3  // Triangle 2
+
+		// Triangles with counter-clockwise winding order
+		0, 3, 1, 
+		3, 2, 1
 	};
 	glGenBuffers(1, &indexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
@@ -162,10 +166,10 @@ void initialize()
 	// 1. Define the data to render
 	float exPositions[] = {
 		//	x		y		z
-			0.0f,  0.0f, -50.0f, //
-			0.0f, -5.0f, -50.0f,
-			5.0f, -5.0f, -50.0f,
-			5.0f,  0.0f, -50.0f
+			0.0f,  0.0f, -40.0f, //
+			0.0f, -10.0f, -40.0f,
+			10.0f, -10.0f, -40.0f,
+			10.0f,  0.0f, -40.0f
 	};
 
 	float exTexCoords[] = {
@@ -242,7 +246,9 @@ void display(void)
 
 	// We disable backface culling for this tutorial, otherwise care must be taken with the winding order
 	// of the vertices. It is however a lot faster to enable culling when drawing large scenes.
-	glDisable(GL_CULL_FACE); //glEnable(GL_CULL_FACE);
+	//glDisable(GL_CULL_FACE); 
+	glEnable(GL_CULL_FACE);
+
 	// Disable depth testing
 	glDisable(GL_DEPTH_TEST);
 	// Set the shader program to use for this draw call
@@ -272,6 +278,10 @@ void display(void)
 
 	// Task 7. Rendering explosion
 	glBindTexture(GL_TEXTURE_2D, exTexture);
+
+	// Enable Transparency by blending the source alpha and the destination
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glBindVertexArray(exVertexArrayObject);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -309,7 +319,10 @@ void gui()
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
 	            ImGui::GetIO().Framerate);
 	// ----------------------------------------------------------
-
+	// Tells OpenGL what is the texture that we currently want to modify
+	glBindTexture(GL_TEXTURE_2D, texture); 
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+	
 	switch (mag)
 	{
 		case 0:
@@ -342,7 +355,7 @@ void gui()
 		break;
 	}
 
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+	
 
 }
 
