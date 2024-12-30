@@ -48,7 +48,10 @@ GLuint positionBuffer, colorBuffer, indexBuffer, vertexArrayObject;
 GLuint texcoordBuffer;
 GLuint texture;
 
-
+// Explosion
+GLuint exPositionBuffer, exTextCoordBuffer, exVertexArrayObject; // VAO for short
+GLuint exTexture; // The pointer to the resource
+GLuint exIndexBuffer; // The indeces of the vertices each triangle uses.
 
 ///////////////////////////////////////////////////////////////////////////////
 /// This function is called once at the start of the program and never again
@@ -154,6 +157,68 @@ void initialize()
 
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
 
+	// Task 7. Add the explosion
+
+	// 1. Define the data to render
+	float exPositions[] = {
+		//	x		y		z
+			0.0f,  0.0f, -50.0f, //
+			0.0f, -5.0f, -50.0f,
+			5.0f, -5.0f, -50.0f,
+			5.0f,  0.0f, -50.0f
+	};
+
+	float exTexCoords[] = {
+		// u	v
+			0.0f, 1.0f,
+			0.0f, 0.0f,
+			1.0f, 0.0f,
+			1.0f, 1.0f
+	};
+	//2. Generate the vertex array object to hold the buffers and define the data layout
+	glGenVertexArrays(1, &exVertexArrayObject);
+	glBindVertexArray(exVertexArrayObject);
+
+	//3. Generate the buffers and load the data to the GPU
+	glGenBuffers(1, &exPositionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, exPositionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, labhelper::array_length(exPositions) * sizeof(float), exPositions, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+	glEnableVertexAttribArray(0);
+
+	glGenBuffers(1, &exTextCoordBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, exTextCoordBuffer);
+	glBufferData(GL_ARRAY_BUFFER, labhelper::array_length(exTexCoords) * sizeof(float), exTexCoords, GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+	glEnableVertexAttribArray(1);
+
+	///////////////////////////////////////////////////////////////////////////
+	// Create the element array buffer object
+	///////////////////////////////////////////////////////////////////////////
+	const int exIndices[] = {
+		0, 1, 3, // Triangle 1
+		1, 2, 3  // Triangle 2
+	};
+	glGenBuffers(1, &exIndexBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, exIndexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, labhelper::array_length(exIndices) * sizeof(float), exIndices,
+		GL_STATIC_DRAW);
+
+	//4. Load the texture
+	int exW, exH, exComp;
+	unsigned char* expImage = stbi_load("../scenes/textures/explosion.png", &exW, &exH, &exComp, STBI_rgb_alpha);
+
+	glGenTextures(1, &exTexture); //4.1 Create the texture object
+	glBindTexture(GL_TEXTURE_2D, exTexture); // 4.2 Bind texture
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, exW, exH, 0, GL_RGBA, GL_UNSIGNED_BYTE, expImage); // 4.3 Load resource
+	free(expImage);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // Define behavior when outside [0,1]
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
 
 }
 
@@ -203,6 +268,12 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, texture);
 
 	glBindVertexArray(vertexArrayObject);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	// Task 7. Rendering explosion
+	glBindTexture(GL_TEXTURE_2D, exTexture);
+
+	glBindVertexArray(exVertexArrayObject);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
