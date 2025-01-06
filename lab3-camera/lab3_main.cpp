@@ -49,7 +49,11 @@ GLuint shaderProgram;
 Model* cityModel = nullptr;
 Model* carModel = nullptr;
 Model* groundModel = nullptr;
-mat4 carModelMatrix(1.0f);
+//mat4 carModelMatrix(1.0f);
+mat4 carModelMatrix(1.0f, 0.0f, 0.0f, 0.0f, // x
+					0.0f, 1.0f, 0.0f, 0.0f, // y
+					0.0f, 0.0f, 1.0f, 0.0f, // z
+					1.0f, 5.0f, 1.0f, 1.0f); // translation
 
 vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
 
@@ -142,10 +146,10 @@ void display()
 	// Set up the view matrix
 	// The view matrix defines where the viewer is looking
 	// Initially fixed, but will be replaced in the tutorial.
-	mat4 constantViewMatrix = mat4(0.707106769f, -0.408248276f, 1.00000000f, 0.000000000f,  //
-	                               0.000000000f, 0.816496551f, 1.00000000f, 0.000000000f,   //
-	                               -0.707106769f, -0.408248276f, 1.00000000f, 0.000000000f, //
-	                               0.000000000f, 0.000000000f, -30.0000000f, 1.00000000f);  //
+	mat4 constantViewMatrix = mat4(0.707106769f, -0.408248276f, 1.00000000f, 0.000000000f,  // X
+	                               0.000000000f, 0.816496551f, 1.00000000f, 0.000000000f,   // Y
+	                               -0.707106769f, -0.408248276f, 1.00000000f, 0.000000000f, // Z
+	                               0.000000000f, 0.000000000f, -30.0000000f, 1.00000000f);  // W
 	mat4 viewMatrix = constantViewMatrix;
 
 	// Setup the projection matrix
@@ -245,22 +249,58 @@ bool handleEvents(void)
 	// check keyboard state (which keys are still pressed)
 	const uint8_t* state = SDL_GetKeyboardState(nullptr);
 
+	// Task 1 moving car
+	vec3 carForward = { 0.0f, 0.0f, 1.0f };
+	vec3 carRight	= { 1.0f, 0.0f, 0.0f };
+	float carSpeed	= 10.0f;
+
 	// implement camera controls based on key states
 	if(state[SDL_SCANCODE_UP])
 	{
 		printf("Key Up is pressed down\n");
+
+		// Manual way
+		carForward *= carSpeed * deltaTime;
+		vec4 velocity = vec4(carForward, 1.0f);
+		mat4 transVelocity(1.0f);
+		transVelocity[3] = velocity;
+		carModelMatrix = carModelMatrix * transVelocity;
+
+		// GLM way
+		//carModelMatrix = translate(carForward * carSpeed * deltaTime) * carModelMatrix;
+
+
 	}
 	if(state[SDL_SCANCODE_DOWN])
 	{
 		printf("Key Down is pressed down\n");
+
+		carForward *= carSpeed * deltaTime;
+		vec4 velocity = vec4(-carForward, 1.0f);
+		mat4 transVelocity(1.0f);
+		transVelocity[3] = velocity;
+		carModelMatrix = carModelMatrix * transVelocity;
+
 	}
 	if(state[SDL_SCANCODE_LEFT])
 	{
 		printf("Key Left is pressed down\n");
+
+		carRight *= carSpeed * deltaTime;
+		vec4 velocity = vec4(-carRight, 1.0f);
+		mat4 transVelocity(1.0f);
+		transVelocity[3] = velocity;
+		carModelMatrix = carModelMatrix * transVelocity;
 	}
 	if(state[SDL_SCANCODE_RIGHT])
 	{
 		printf("Key Right is pressed down\n");
+
+		carRight *= carSpeed * deltaTime;
+		vec4 velocity = vec4(carRight, 1.0f);
+		mat4 transVelocity(1.0f);
+		transVelocity[3] = velocity;
+		carModelMatrix = carModelMatrix * transVelocity;
 	}
 
 	return quitEvent;
