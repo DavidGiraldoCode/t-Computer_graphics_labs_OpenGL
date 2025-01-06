@@ -253,6 +253,12 @@ bool handleEvents(void)
 	vec3 carForward = { 0.0f, 0.0f, 1.0f };
 	vec3 carRight	= { 1.0f, 0.0f, 0.0f };
 	float carSpeed	= 10.0f;
+	float rotationSpeed = 2.f;
+
+	mat4 translationMatrix = carModelMatrix;
+	//mat4 translationMatrix(1.f);
+	mat4 rotationYMatrix(1.f);
+	//mat4 rotationYMatrix = carModelMatrix;
 
 	// implement camera controls based on key states
 	if(state[SDL_SCANCODE_UP])
@@ -264,7 +270,11 @@ bool handleEvents(void)
 		vec4 velocity = vec4(carForward, 1.0f);
 		mat4 transVelocity(1.0f);
 		transVelocity[3] = velocity;
-		carModelMatrix = carModelMatrix * transVelocity;
+		
+		//translationMatrix = transVelocity * translationMatrix;
+
+		// This applies the translation first to the transform
+		translationMatrix = translationMatrix * transVelocity;
 
 		// GLM way
 		//carModelMatrix = translate(carForward * carSpeed * deltaTime) * carModelMatrix;
@@ -279,29 +289,52 @@ bool handleEvents(void)
 		vec4 velocity = vec4(-carForward, 1.0f);
 		mat4 transVelocity(1.0f);
 		transVelocity[3] = velocity;
-		carModelMatrix = carModelMatrix * transVelocity;
+		
+		//translationMatrix = transVelocity * translationMatrix;
+
+		translationMatrix = translationMatrix * transVelocity;
 
 	}
 	if(state[SDL_SCANCODE_LEFT])
 	{
 		printf("Key Left is pressed down\n");
-
+		
+		
+		
 		carRight *= carSpeed * deltaTime;
 		vec4 velocity = vec4(-carRight, 1.0f);
 		mat4 transVelocity(1.0f);
 		transVelocity[3] = velocity;
-		carModelMatrix = carModelMatrix * transVelocity;
+		//translationMatrix = transVelocity * translationMatrix;
+		
+		float delta = rotationSpeed * deltaTime;
+		rotationYMatrix = { cos(delta), 0.0f, -sin(delta),  0.0f, // X
+								0.0f,	   1.0f,	0.0f,	   0.0f, // Y
+							   sin(delta), 0.0f, cos(delta),   0.0f, // Z
+								0.0f,      0.0f,    0.0f,      1.0f  // W
+		};
+
 	}
 	if(state[SDL_SCANCODE_RIGHT])
 	{
 		printf("Key Right is pressed down\n");
 
 		carRight *= carSpeed * deltaTime;
-		vec4 velocity = vec4(carRight, 1.0f);
+		vec4 velocity = vec4(-carRight, 1.0f);
 		mat4 transVelocity(1.0f);
 		transVelocity[3] = velocity;
-		carModelMatrix = carModelMatrix * transVelocity;
+		//translationMatrix = transVelocity * translationMatrix;
+
+		float delta = rotationSpeed * deltaTime * -1;
+		rotationYMatrix = { cos(delta), 0.0f, -sin(delta),  0.0f, // X
+								0.0f,	   1.0f,	0.0f,	   0.0f, // Y
+							   sin(delta), 0.0f, cos(delta),   0.0f, // Z
+								0.0f,      0.0f,    0.0f,      1.0f  // W
+		};
+		
 	}
+
+	carModelMatrix = translationMatrix * rotationYMatrix;
 
 	return quitEvent;
 }

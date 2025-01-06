@@ -26,5 +26,22 @@ transVelocity[3] = velocity;
 carModelMatrix = carModelMatrix * transVelocity;
 ```
 
+**The importance of multiplication order**
+
+```C++
+float delta = rotationSpeed * deltaTime * -1;
+mat4 rotationYMatrix = { cos(delta), 0.0f, -sin(delta),  0.0f, // X
+						0.0f,	   1.0f,	0.0f,	   0.0f, // Y
+					   sin(delta), 0.0f, cos(delta),   0.0f, // Z
+						0.0f,      0.0f,    0.0f,      1.0f  // W
+};
+
+// This applies the translation first, cause a wrong rotation, as the pivot has been offseted.
+carModelMatrix = rotationYMatrix * T;
+
+// This applies the translation after the rotation has been applied.
+carModelMatrix = T * rotationYMatrix;
+```
+
 # References
 - https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
