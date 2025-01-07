@@ -155,7 +155,22 @@ void display()
 	                               0.000000000f, 0.816496551f, 1.00000000f, 0.000000000f,   // Y
 	                               -0.707106769f, -0.408248276f, 1.00000000f, 0.000000000f, // Z
 	                               0.000000000f, 0.000000000f, -30.0000000f, 1.00000000f);  // W
-	mat4 viewMatrix = constantViewMatrix;
+	//mat4 viewMatrix = constantViewMatrix;
+
+	// Task 4 Camera control
+	vec3 cameraRight = normalize(cross(cameraDirection, worldUp));
+	vec3 cameraUp = normalize(cross(cameraRight, cameraDirection));
+
+	// Why is it a 3x3 matrix and not 4x4?
+	mat3 cameraBaseVectorWorldSpace(cameraRight, cameraUp, -cameraDirection);
+
+	// This allow to rotate the vertices of models based on the camera
+	mat4 cameraRotation = transpose(cameraBaseVectorWorldSpace);
+
+	// The negative cameraPosition makes the camera back to the origin.
+	// The viewMatrix is in reverse order, we firts translate back to the origin and then rotate
+	mat4 viewMatrix = cameraRotation * translate(-cameraPosition);
+
 
 	// Setup the projection matrix
 	if(w != old_w || h != old_h)
@@ -262,8 +277,12 @@ bool handleEvents(void)
 			int x;
 			int y;
 			SDL_GetMouseState(&x, &y);
+
 			g_prevMouseCoords.x = x;
 			g_prevMouseCoords.y = y;
+
+			
+
 		}
 
 		if(!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT)))
@@ -282,6 +301,17 @@ bool handleEvents(void)
 			}
 			g_prevMouseCoords.x = event.motion.x;
 			g_prevMouseCoords.y = event.motion.y;
+
+			////////////////////////////
+			// Task 4 Camera controlls
+			////////////////////////////
+
+			float camRotationSpeed = 0.005f;
+
+			mat4 yaw = rotate(camRotationSpeed * -delta_x, worldUp);
+			mat4 pitch = rotate(camRotationSpeed * -delta_y, normalize(cross(cameraDirection, worldUp)));
+
+			cameraDirection = vec3(pitch * yaw * vec4(cameraDirection, 0.f));
 		}
 	}
 

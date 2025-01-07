@@ -45,6 +45,7 @@ carModelMatrix = T * rotationYMatrix;
 
 # References
 - https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
+- http://www.c-jump.com/bcc/common/Talk3/Math/GLM/GLM.html 
 
 ## Session 2025-01-07
 
@@ -76,3 +77,4 @@ This approach keeps the rotation as the first transformation. The key concept is
 2. Rotate the right translation vector
 3. Translate the rotated model along the rotated translation vector
 4. Translate the result to the location we need.
+
