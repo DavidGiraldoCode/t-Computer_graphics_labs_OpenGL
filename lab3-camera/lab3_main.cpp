@@ -48,8 +48,15 @@ GLuint shaderProgram;
 // Models
 Model* cityModel = nullptr;
 Model* carModel = nullptr;
+Model* carTwoModel = nullptr;
 Model* groundModel = nullptr;
-mat4 carModelMatrix(1.0f);
+//mat4 carModelMatrix(1.0f);
+mat4 carModelMatrix(1.0f, 0.0f, 0.0f, 0.0f, // x
+					0.0f, 1.0f, 0.0f, 0.0f, // y
+					0.0f, 0.0f, 1.0f, 0.0f, // z
+					1.0f, 5.0f, 1.0f, 1.0f); // translation
+
+mat4 carTwoModelMatrix( 1.0f);
 
 vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
 
@@ -79,6 +86,8 @@ void loadModels()
 	cityModel = loadModelFromOBJ("../scenes/city.obj");
 	carModel = loadModelFromOBJ("../scenes/car.obj");
 	groundModel = loadModelFromOBJ("../scenes/ground_plane.obj");
+
+	carTwoModel = carModel; // use the same mesh to render a second car
 }
 
 
@@ -142,11 +151,26 @@ void display()
 	// Set up the view matrix
 	// The view matrix defines where the viewer is looking
 	// Initially fixed, but will be replaced in the tutorial.
-	mat4 constantViewMatrix = mat4(0.707106769f, -0.408248276f, 1.00000000f, 0.000000000f,  //
-	                               0.000000000f, 0.816496551f, 1.00000000f, 0.000000000f,   //
-	                               -0.707106769f, -0.408248276f, 1.00000000f, 0.000000000f, //
-	                               0.000000000f, 0.000000000f, -30.0000000f, 1.00000000f);  //
-	mat4 viewMatrix = constantViewMatrix;
+	mat4 constantViewMatrix = mat4(0.707106769f, -0.408248276f, 1.00000000f, 0.000000000f,  // X
+	                               0.000000000f, 0.816496551f, 1.00000000f, 0.000000000f,   // Y
+	                               -0.707106769f, -0.408248276f, 1.00000000f, 0.000000000f, // Z
+	                               0.000000000f, 0.000000000f, -30.0000000f, 1.00000000f);  // W
+	//mat4 viewMatrix = constantViewMatrix;
+
+	// Task 4 Camera control
+	vec3 cameraRight = normalize(cross(cameraDirection, worldUp));
+	vec3 cameraUp = normalize(cross(cameraRight, cameraDirection));
+
+	// Why is it a 3x3 matrix and not 4x4?
+	mat3 cameraBaseVectorWorldSpace(cameraRight, cameraUp, -cameraDirection);
+
+	// This allow to rotate the vertices of models based on the camera
+	mat4 cameraRotation = transpose(cameraBaseVectorWorldSpace);
+
+	// The negative cameraPosition makes the camera back to the origin.
+	// The viewMatrix is in reverse order, we firts translate back to the origin and then rotate
+	mat4 viewMatrix = cameraRotation * translate(-cameraPosition);
+
 
 	// Setup the projection matrix
 	if(w != old_w || h != old_h)
@@ -172,13 +196,47 @@ void display()
 
 	// Ground
 	// Task 5: Uncomment this
-	//drawGround(modelViewProjectionMatrix);
+	drawGround(modelViewProjectionMatrix);
 
 	// car
 	modelViewProjectionMatrix = projectionMatrix * viewMatrix * carModelMatrix;
 	glUniformMatrix4fv(mvploc, 1, false, &modelViewProjectionMatrix[0].x);
 	glUniformMatrix4fv(mloc, 1, false, &carModelMatrix[0].x);
 	render(carModel);
+
+	// Second car
+
+	vec3 roundaboutCenter = { 25.f, 0.0f, 0.0f };
+	vec3 roundaboutRadius = { 10.f, 0.0f, 0.0f };
+	mat4 locationMatrix(1.0f);
+
+	locationMatrix[3] = vec4((roundaboutCenter + roundaboutRadius), 1.0f);
+	//carTwoModelMatrix = locationMatrix;
+
+	// One way of doing it:
+	/*
+	carTwoModelMatrix = translate(roundaboutRadius);
+	float delta = M_PI * -0.5 * currentTime;
+	carTwoModelMatrix = rotate(delta, vec3(0.f, 1.f, 0.f)) * carTwoModelMatrix;
+	carTwoModelMatrix = translate(roundaboutCenter) * carTwoModelMatrix;
+	*/
+
+	// Cleaner way of doing it:
+	float delta = M_PI * -0.5f * currentTime;
+	vec3 yAxis = vec3(0.f, 1.f, 0.f);
+
+	mat4 rotationM = rotate(delta, yAxis);
+	vec3 transformedVector = rotationM * vec4(roundaboutRadius, 1.0f);
+	mat4 translationRadius = translate(transformedVector);
+	mat4 translationCenter = translate(roundaboutCenter);
+
+	carTwoModelMatrix = translationCenter * translationRadius * rotationM;
+	
+	modelViewProjectionMatrix = projectionMatrix * viewMatrix * carTwoModelMatrix;
+	glUniformMatrix4fv(mvploc, 1, false, &modelViewProjectionMatrix[0].x);
+	glUniformMatrix4fv(mloc, 1, false, &carTwoModelMatrix[0].x);
+	render(carModel);
+	//render(carTwoModel);
 
 
 	glUseProgram(0);
@@ -219,8 +277,12 @@ bool handleEvents(void)
 			int x;
 			int y;
 			SDL_GetMouseState(&x, &y);
+
 			g_prevMouseCoords.x = x;
 			g_prevMouseCoords.y = y;
+
+			
+
 		}
 
 		if(!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT)))
@@ -236,32 +298,128 @@ bool handleEvents(void)
 			if(event.button.button == SDL_BUTTON_LEFT)
 			{
 				printf("Mouse motion while left button down (%i, %i)\n", event.motion.x, event.motion.y);
+
+				////////////////////////////
+				// Task 4 Camera controlls
+				////////////////////////////
+
+				float camRotationSpeed = 0.005f;
+
+				mat4 yaw = rotate(camRotationSpeed * -delta_x, worldUp);
+				mat4 pitch = rotate(camRotationSpeed * -delta_y, normalize(cross(cameraDirection, worldUp)));
+
+				cameraDirection = vec3(pitch * yaw * vec4(cameraDirection, 0.f));
 			}
 			g_prevMouseCoords.x = event.motion.x;
 			g_prevMouseCoords.y = event.motion.y;
+
+			
 		}
 	}
 
 	// check keyboard state (which keys are still pressed)
 	const uint8_t* state = SDL_GetKeyboardState(nullptr);
 
+	// Task 1 moving car
+	vec3 carForward = { 0.0f, 0.0f, 1.0f };
+	vec3 carRight	= { 1.0f, 0.0f, 0.0f };
+	float carSpeed	= 10.0f;
+	float rotationSpeed = 2.f;
+
+	mat4 translationMatrix = carModelMatrix;
+	//mat4 translationMatrix(1.f);
+	mat4 rotationYMatrix(1.f);
+	//mat4 rotationYMatrix = carModelMatrix;
+
 	// implement camera controls based on key states
 	if(state[SDL_SCANCODE_UP])
 	{
 		printf("Key Up is pressed down\n");
+
+		// Manual way
+		carForward *= carSpeed * deltaTime;
+		vec4 velocity = vec4(carForward, 1.0f);
+		mat4 transVelocity(1.0f);
+		transVelocity[3] = velocity;
+		
+		//translationMatrix = transVelocity * translationMatrix;
+
+		// This applies the translation first to the transform
+		translationMatrix = translationMatrix * transVelocity;
+
+		// GLM way
+		//carModelMatrix = translate(carForward * carSpeed * deltaTime) * carModelMatrix;
+
+
 	}
 	if(state[SDL_SCANCODE_DOWN])
 	{
 		printf("Key Down is pressed down\n");
+
+		carForward *= carSpeed * deltaTime;
+		vec4 velocity = vec4(-carForward, 1.0f);
+		mat4 transVelocity(1.0f);
+		transVelocity[3] = velocity;
+		
+		//translationMatrix = transVelocity * translationMatrix;
+
+		translationMatrix = translationMatrix * transVelocity;
+
 	}
 	if(state[SDL_SCANCODE_LEFT])
 	{
 		printf("Key Left is pressed down\n");
+		
+		
+		
+		carRight *= carSpeed * deltaTime;
+		vec4 velocity = vec4(-carRight, 1.0f);
+		mat4 transVelocity(1.0f);
+		transVelocity[3] = velocity;
+		//translationMatrix = transVelocity * translationMatrix;
+		
+		float delta = rotationSpeed * deltaTime;
+		rotationYMatrix = { cos(delta), 0.0f, -sin(delta),  0.0f, // X
+								0.0f,	   1.0f,	0.0f,	   0.0f, // Y
+							   sin(delta), 0.0f, cos(delta),   0.0f, // Z
+								0.0f,      0.0f,    0.0f,      1.0f  // W
+		};
+
 	}
 	if(state[SDL_SCANCODE_RIGHT])
 	{
 		printf("Key Right is pressed down\n");
+
+		carRight *= carSpeed * deltaTime;
+		vec4 velocity = vec4(-carRight, 1.0f);
+		mat4 transVelocity(1.0f);
+		transVelocity[3] = velocity;
+		//translationMatrix = transVelocity * translationMatrix;
+
+		float delta = rotationSpeed * deltaTime * -1;
+		rotationYMatrix = { cos(delta), 0.0f, -sin(delta),  0.0f, // X
+								0.0f,	   1.0f,	0.0f,	   0.0f, // Y
+							   sin(delta), 0.0f, cos(delta),   0.0f, // Z
+								0.0f,      0.0f,    0.0f,      1.0f  // W
+		};
+		
 	}
+	if (state[SDL_SCANCODE_W])
+	{
+		printf("Key W is pressed down\n");
+		float cameraMoveSpeed = 5.0f;
+		float delta = cameraMoveSpeed * deltaTime;
+		cameraPosition = cameraPosition + cameraDirection * delta;
+	}
+	if (state[SDL_SCANCODE_S])
+	{
+		printf("Key S is pressed down\n");
+		float cameraMoveSpeed = 5.0f;
+		float delta = cameraMoveSpeed * deltaTime;
+		cameraPosition = cameraPosition + cameraDirection * -delta;
+	}
+
+	carModelMatrix = translationMatrix * rotationYMatrix;
 
 	return quitEvent;
 }
