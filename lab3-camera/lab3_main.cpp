@@ -56,10 +56,7 @@ mat4 carModelMatrix(1.0f, 0.0f, 0.0f, 0.0f, // x
 					0.0f, 0.0f, 1.0f, 0.0f, // z
 					1.0f, 5.0f, 1.0f, 1.0f); // translation
 
-mat4 carTwoModelMatrix( 1.0f, 0.0f, 0.0f, 0.0f, // x
-						0.0f, 1.0f, 0.0f, 0.0f, // y
-						0.0f, 0.0f, 1.0f, 0.0f, // z
-						1.0f, 1.0f, 1.0f, 1.0f); // translation
+mat4 carTwoModelMatrix( 1.0f);
 
 vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
 
@@ -193,10 +190,38 @@ void display()
 	render(carModel);
 
 	// Second car
+
+	vec3 roundaboutCenter = { 25.f, 0.0f, 0.0f };
+	vec3 roundaboutRadius = { 15.f, 0.0f, 0.0f };
+	mat4 locationMatrix(1.0f);
+
+	locationMatrix[3] = vec4((roundaboutCenter + roundaboutRadius), 1.0f);
+	//carTwoModelMatrix = locationMatrix;
+
+	// One way of doing it:
+	/*
+	carTwoModelMatrix = translate(roundaboutRadius);
+	float delta = M_PI * -0.5 * currentTime;
+	carTwoModelMatrix = rotate(delta, vec3(0.f, 1.f, 0.f)) * carTwoModelMatrix;
+	carTwoModelMatrix = translate(roundaboutCenter) * carTwoModelMatrix;
+	*/
+
+	// Cleaner way of doing it:
+	float delta = M_PI * -0.5 * currentTime;
+	vec3 yAxis = vec3(0.f, 1.f, 0.f);
+
+	mat4 rotationM = rotate(delta, yAxis);
+	vec3 transformedVector = rotationM * vec4(roundaboutRadius, 1.0f);
+	mat4 translationRadius = translate(transformedVector);
+	mat4 translationCenter = translate(roundaboutCenter);
+
+	carTwoModelMatrix = translationCenter * translationRadius * rotationM;
+	
 	modelViewProjectionMatrix = projectionMatrix * viewMatrix * carTwoModelMatrix;
 	glUniformMatrix4fv(mvploc, 1, false, &modelViewProjectionMatrix[0].x);
 	glUniformMatrix4fv(mloc, 1, false, &carTwoModelMatrix[0].x);
-	render(carTwoModel);
+	render(carModel);
+	//render(carTwoModel);
 
 
 	glUseProgram(0);

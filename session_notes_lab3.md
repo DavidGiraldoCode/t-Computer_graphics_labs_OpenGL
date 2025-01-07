@@ -45,3 +45,34 @@ carModelMatrix = T * rotationYMatrix;
 
 # References
 - https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
+
+## Session 2025-01-07
+
+The OBJ model gets loaded and saved using a pointer that several instances can use for rendering.
+
+One way of doing it is offsetting the pivot, by applying the translation first by the radius, and then the rotation:
+```C++
+carTwoModelMatrix = translate(roundaboutRadius);
+
+float delta = M_PI * -0.5 * currentTime;
+carTwoModelMatrix = rotate(delta, vec3(0.f, 1.f, 0.f)) * carTwoModelMatrix;
+carTwoModelMatrix = translate(roundaboutCenter) * carTwoModelMatrix;
+```
+
+A cleaner approach is proposed by the professor:
+```C++
+float delta = M_PI * -0.5 * currentTime;
+vec3 yAxis = vec3(0.f, 1.f, 0.f);
+
+mat4 rotationM = rotate(delta, yAxis);
+vec3 transformedVector = rotationM * vec4(roundaboutRadius, 1.0f);
+mat4 translationRadius = translate(transformedVector);
+mat4 translationCenter = translate(roundaboutCenter);
+
+carTwoModelMatrix = translationCenter * translationRadius * rotationM;
+```
+This approach keeps the rotation as the first transformation. The key concept is that the translation vector built from the radious gets transform first by the rotation. So the rotation is carried on following this:
+1. Rotate the model
+2. Rotate the right translation vector
+3. Translate the rotated model along the rotated translation vector
+4. Translate the result to the location we need.
