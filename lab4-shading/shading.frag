@@ -61,11 +61,26 @@ vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 	//            to the light. If the light is backfacing the triangle,
 	//            return vec3(0);
 	///////////////////////////////////////////////////////////////////////////
+	vec3 fragmentToLight = viewSpaceLightPosition.xyz - viewSpacePosition.xyz;
+	float d = length(fragmentToLight);		// Distance to the light source,  falloff_factor 1/d*d
+	
+	//float 
 
+	vec3 wi = normalize(fragmentToLight);	// incoming direction
+
+	float nDotWi = dot(n, wi);
+	if( nDotWi <= 0)
+		return vec3(0);
+
+
+	vec3 Li = point_light_intensity_multiplier * point_light_color * (1.0f / (d * d)); // Li
+	
 	///////////////////////////////////////////////////////////////////////////
 	// Task 1.3 - Calculate the diffuse term and return that as the result
 	///////////////////////////////////////////////////////////////////////////
-	// vec3 diffuse_term = ...
+	vec3 diffuse_term = (1.0f / PI) * base_color * abs(nDotWi) * Li;
+
+	direct_illum = diffuse_term;
 
 	///////////////////////////////////////////////////////////////////////////
 	// Task 2 - Calculate the Torrance Sparrow BRDF and return the light
@@ -77,6 +92,7 @@ vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 	///////////////////////////////////////////////////////////////////////////
 
 	return direct_illum;
+
 }
 
 vec3 calculateIndirectIllumination(vec3 wo, vec3 n, vec3 base_color)
@@ -102,8 +118,12 @@ void main()
 	// Task 1.1 - Fill in the outgoing direction, wo, and the normal, n. Both
 	//            shall be normalized vectors in view-space.
 	///////////////////////////////////////////////////////////////////////////
-	vec3 wo = vec3(0.0);
-	vec3 n = vec3(0.0);
+	
+	//vec3 wo = vec3(0.0);
+	vec3 cameraOriginVS = vec3(0.0);
+	vec3 wo = normalize(cameraOriginVS.xyz - viewSpacePosition.xyz); // Is the same as normalize(-viewSpacePosition)
+	//vec3 n = vec3(0.0);
+	vec3 n = normalize(viewSpaceNormal);
 
 	vec3 base_color = material_color;
 	if(has_color_texture == 1)
@@ -124,7 +144,8 @@ void main()
 	///////////////////////////////////////////////////////////////////////////
 	// Task 1.4 - Make glowy things glow!
 	///////////////////////////////////////////////////////////////////////////
-	vec3 emission_term = vec3(0.0);
+	//vec3 emission_term = vec3(0.0);
+	vec3 emission_term = material_emission;
 
 	vec3 final_color = direct_illumination_term + indirect_illumination_term + emission_term;
 
