@@ -196,7 +196,7 @@ void display()
 
 	// Ground
 	// Task 5: Uncomment this
-	//drawGround(modelViewProjectionMatrix);
+	drawGround(modelViewProjectionMatrix);
 
 	// car
 	modelViewProjectionMatrix = projectionMatrix * viewMatrix * carModelMatrix;
@@ -207,7 +207,7 @@ void display()
 	// Second car
 
 	vec3 roundaboutCenter = { 25.f, 0.0f, 0.0f };
-	vec3 roundaboutRadius = { 15.f, 0.0f, 0.0f };
+	vec3 roundaboutRadius = { 10.f, 0.0f, 0.0f };
 	mat4 locationMatrix(1.0f);
 
 	locationMatrix[3] = vec4((roundaboutCenter + roundaboutRadius), 1.0f);
@@ -222,7 +222,7 @@ void display()
 	*/
 
 	// Cleaner way of doing it:
-	float delta = M_PI * -0.5 * currentTime;
+	float delta = M_PI * -0.5f * currentTime;
 	vec3 yAxis = vec3(0.f, 1.f, 0.f);
 
 	mat4 rotationM = rotate(delta, yAxis);
@@ -298,20 +298,22 @@ bool handleEvents(void)
 			if(event.button.button == SDL_BUTTON_LEFT)
 			{
 				printf("Mouse motion while left button down (%i, %i)\n", event.motion.x, event.motion.y);
+
+				////////////////////////////
+				// Task 4 Camera controlls
+				////////////////////////////
+
+				float camRotationSpeed = 0.005f;
+
+				mat4 yaw = rotate(camRotationSpeed * -delta_x, worldUp);
+				mat4 pitch = rotate(camRotationSpeed * -delta_y, normalize(cross(cameraDirection, worldUp)));
+
+				cameraDirection = vec3(pitch * yaw * vec4(cameraDirection, 0.f));
 			}
 			g_prevMouseCoords.x = event.motion.x;
 			g_prevMouseCoords.y = event.motion.y;
 
-			////////////////////////////
-			// Task 4 Camera controlls
-			////////////////////////////
-
-			float camRotationSpeed = 0.005f;
-
-			mat4 yaw = rotate(camRotationSpeed * -delta_x, worldUp);
-			mat4 pitch = rotate(camRotationSpeed * -delta_y, normalize(cross(cameraDirection, worldUp)));
-
-			cameraDirection = vec3(pitch * yaw * vec4(cameraDirection, 0.f));
+			
 		}
 	}
 
@@ -401,6 +403,20 @@ bool handleEvents(void)
 								0.0f,      0.0f,    0.0f,      1.0f  // W
 		};
 		
+	}
+	if (state[SDL_SCANCODE_W])
+	{
+		printf("Key W is pressed down\n");
+		float cameraMoveSpeed = 5.0f;
+		float delta = cameraMoveSpeed * deltaTime;
+		cameraPosition = cameraPosition + cameraDirection * delta;
+	}
+	if (state[SDL_SCANCODE_S])
+	{
+		printf("Key S is pressed down\n");
+		float cameraMoveSpeed = 5.0f;
+		float delta = cameraMoveSpeed * deltaTime;
+		cameraPosition = cameraPosition + cameraDirection * -delta;
 	}
 
 	carModelMatrix = translationMatrix * rotationYMatrix;
