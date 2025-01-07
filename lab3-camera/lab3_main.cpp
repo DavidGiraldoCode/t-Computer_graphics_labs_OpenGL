@@ -48,12 +48,18 @@ GLuint shaderProgram;
 // Models
 Model* cityModel = nullptr;
 Model* carModel = nullptr;
+Model* carTwoModel = nullptr;
 Model* groundModel = nullptr;
 //mat4 carModelMatrix(1.0f);
 mat4 carModelMatrix(1.0f, 0.0f, 0.0f, 0.0f, // x
 					0.0f, 1.0f, 0.0f, 0.0f, // y
 					0.0f, 0.0f, 1.0f, 0.0f, // z
 					1.0f, 5.0f, 1.0f, 1.0f); // translation
+
+mat4 carTwoModelMatrix( 1.0f, 0.0f, 0.0f, 0.0f, // x
+						0.0f, 1.0f, 0.0f, 0.0f, // y
+						0.0f, 0.0f, 1.0f, 0.0f, // z
+						1.0f, 1.0f, 1.0f, 1.0f); // translation
 
 vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
 
@@ -83,6 +89,8 @@ void loadModels()
 	cityModel = loadModelFromOBJ("../scenes/city.obj");
 	carModel = loadModelFromOBJ("../scenes/car.obj");
 	groundModel = loadModelFromOBJ("../scenes/ground_plane.obj");
+
+	carTwoModel = carModel; // use the same mesh to render a second car
 }
 
 
@@ -183,6 +191,12 @@ void display()
 	glUniformMatrix4fv(mvploc, 1, false, &modelViewProjectionMatrix[0].x);
 	glUniformMatrix4fv(mloc, 1, false, &carModelMatrix[0].x);
 	render(carModel);
+
+	// Second car
+	modelViewProjectionMatrix = projectionMatrix * viewMatrix * carTwoModelMatrix;
+	glUniformMatrix4fv(mvploc, 1, false, &modelViewProjectionMatrix[0].x);
+	glUniformMatrix4fv(mloc, 1, false, &carTwoModelMatrix[0].x);
+	render(carTwoModel);
 
 
 	glUseProgram(0);
