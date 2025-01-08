@@ -80,7 +80,7 @@ vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 	///////////////////////////////////////////////////////////////////////////
 	vec3 diffuse_term = (1.0f / PI) * base_color * abs(nDotWi) * Li;
 
-	direct_illum = diffuse_term;
+	//direct_illum = diffuse_term;
 
 	///////////////////////////////////////////////////////////////////////////
 	// Task 2 - Calculate the Torrance Sparrow BRDF and return the light
@@ -111,13 +111,33 @@ vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 
 	float brdf = (Fresnel_wi * DistMultifacet_wh * GShadowing_wiwo) / (4 * nDotWo * nDotWi);
 
-	return brdf * nDotWi * Li;
+	// Debugging each term
+	//return vec3(Fresnel_wi);
+	//return vec3(DistMultifacet_wh);
+	//return vec3(GShadowing_wiwo);
+
+	//return brdf * nDotWi * Li;
 
 	///////////////////////////////////////////////////////////////////////////
 	// Task 3 - Make your shader respect the parameters of our material model.
 	///////////////////////////////////////////////////////////////////////////
 
-	//return direct_illum;
+	// Recall that  refraction is the redirection of a wave as it passes from one medium to another
+
+	// Metal term: All the light that was refracted gets transform to heat, and the reflected get the color of the material
+	vec3 metalTerm = brdf * base_color * nDotWi * Li;
+
+	// Dielectric term: All the light that gets refracted, bounces off on another direction, modeled using diffuse_term
+
+	vec3 dielectricTerm = brdf * nDotWi * Li + (1 - Fresnel_wi) * diffuse_term;
+
+	//return metalTerm;
+	//return dielectricTerm;
+
+	// Blending between metal and dielectric terms.
+	direct_illum = material_metalness * metalTerm + (1 - material_metalness) * dielectricTerm;
+
+	return direct_illum;
 
 }
 
