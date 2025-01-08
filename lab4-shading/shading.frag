@@ -6,11 +6,11 @@ precision highp float;
 ///////////////////////////////////////////////////////////////////////////////
 // Material
 ///////////////////////////////////////////////////////////////////////////////
-uniform vec3 material_color;
-uniform float material_metalness;
-uniform float material_fresnel;
-uniform float material_shininess;
-uniform vec3 material_emission;
+uniform vec3	material_color;
+uniform float	material_metalness;
+uniform float	material_fresnel;
+uniform float	material_shininess;
+uniform vec3	material_emission;
 
 uniform int has_color_texture;
 layout(binding = 0) uniform sampler2D colorMap;
@@ -26,8 +26,8 @@ uniform float environment_multiplier;
 ///////////////////////////////////////////////////////////////////////////////
 // Light source
 ///////////////////////////////////////////////////////////////////////////////
-uniform vec3 point_light_color = vec3(1.0, 1.0, 1.0);
-uniform float point_light_intensity_multiplier = 50.0;
+uniform vec3	point_light_color = vec3(1.0, 1.0, 1.0);
+uniform float	point_light_intensity_multiplier = 50.0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -62,9 +62,7 @@ vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 	//            return vec3(0);
 	///////////////////////////////////////////////////////////////////////////
 	vec3 fragmentToLight = viewSpaceLightPosition.xyz - viewSpacePosition.xyz;
-	float d = length(fragmentToLight);		// Distance to the light source,  falloff_factor 1/d*d
-	
-	//float 
+	float d = length(fragmentToLight);		// Distance to the light source,  falloff_factor 1/d*d 
 
 	vec3 wi = normalize(fragmentToLight);	// incoming direction
 
@@ -149,10 +147,73 @@ vec3 calculateIndirectIllumination(vec3 wo, vec3 n, vec3 base_color)
 	//          the diffuse reflection
 	///////////////////////////////////////////////////////////////////////////
 
+	// Transform normals in View space to World Space
+	// This gives the direction to where to fetch the irrandiance data
+
+	vec3 n_ws = vec3(viewInverse * vec4(n, 0.0f));
+
+	// Calculate the spherical coordinates of the direction
+	float theta = acos(max(-1.0f, min(1.0f, n_ws.y)));
+	float phi = atan(n_ws.z, n_ws.x);
+	if(phi < 0.0f)
+	{
+		phi = phi + 2.0f * PI;
+	}
+
+	vec2 lookupUVCoord = vec2(phi / (2.0 * PI), 1 - theta / PI);
+
+	// also called Li 
+	vec3 irrandiance = vec3(environment_multiplier * texture(irradianceMap, lookupUVCoord));
+	//textur().rbg also works
+	
+	// Diffuse term of the inderect illumination
+	
+	float diffuseBRDF = 1 / PI;
+	vec3 diffuseTermII = base_color * diffuseBRDF * irrandiance;
+
+	//return diffuseTermII;
+
 	///////////////////////////////////////////////////////////////////////////
 	// Task 6 - Look up in the reflection map from the perfect specular
 	//          direction and calculate the dielectric and metal terms.
 	///////////////////////////////////////////////////////////////////////////
+
+	// The wi incoming direction in view space
+	vec3 recflection = normalize((2 * dot(n, wo)) * n - wo);
+	//vec3 recflection = normalize(reflect(-wo, n));
+	// Also called Wr
+	vec3 wi_ws =  normalize(vec3(viewInverse * vec4(recflection, 0.0f)));
+
+	// Calculate the spherical coordinates of the direction
+	float thetaR = acos(max(-1.0f, min(1.0f, wi_ws.y)));
+	float phiR = atan(wi_ws.z, wi_ws.x);
+	if(phiR < 0.0f)
+	{
+		phiR = phiR + 2.0f * PI;
+	}
+
+	vec2 lookupUR = vec2(phiR / (2.0 * PI), 1 - thetaR / PI);
+	float roughness = sqrt(sqrt(2.0 / (material_shininess + 2)));
+	
+	// incoming radiance 
+	vec3 randiance = vec3(environment_multiplier * textureLod(reflectionMap, lookupUVCoord, roughness * 7.0));
+	//return randiance;
+
+	// Metallic term
+	vec3  wh		= normalize(recflection + wo).xyz; // wi + wo in view space
+	float woDotWh	= max( 0.0, dot(wo, wh));
+
+	float fresnell = material_fresnel + ( 1.0 - material_fresnel) * pow(1.0 - woDotWh, 5);
+
+	vec3 metalicTerm = fresnell * base_color * randiance;
+
+	// Dielectric term
+	vec3 dielectricTerm = fresnell * randiance + (1 - fresnell ) * diffuseTermII;
+
+	// Blending between metal and dielectric terms.
+	vec3 microfacetTerm = material_metalness * metalicTerm + (1.0f - material_metalness) * dielectricTerm;
+
+	indirect_illum = microfacetTerm;
 
 	return indirect_illum;
 }

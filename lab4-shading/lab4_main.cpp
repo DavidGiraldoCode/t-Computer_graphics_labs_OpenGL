@@ -216,12 +216,13 @@ void drawFullScreenQuad()
 	// Task 4.2
 	
 	//Disabled Depth test
-	glDisable(GL_DEPTH_TEST);
-	GLboolean depth_test_state = false;
-	glGetBooleanv(GL_DEPTH_TEST, &depth_test_state);
+	//glDisable(GL_DEPTH_TEST);
+	GLboolean depth_test_state;
+	glGetBooleanv(GL_DEPTH_TEST, &depth_test_state); 
+	// Sets the variable to the current state before disabling it
 
-	if(depth_test_state)
-		glDisable(GL_DEPTH_TEST);
+	//if(depth_test_state)
+	glDisable(GL_DEPTH_TEST);
 
 	// Set the shader program to use to draw the VAO
 	glUseProgram(backgroundProgram);
@@ -229,7 +230,7 @@ void drawFullScreenQuad()
 	glBindVertexArray(fullScreenQuadVAO);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-	if (!depth_test_state)
+	if (depth_test_state)
 		glEnable(GL_DEPTH_TEST);
 
 	glUseProgram(0);
