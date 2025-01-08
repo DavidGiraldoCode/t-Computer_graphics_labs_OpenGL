@@ -87,11 +87,37 @@ vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 	//          reflected from that instead
 	///////////////////////////////////////////////////////////////////////////
 
+	float nDotWo	 = dot(n,wo);
+	//	  nDotWi is already defined
+	vec3  wh		= normalize(wi + wo).xyz;
+	float nDotWh	= dot(n,wh);
+	float woDotWi	= dot(wo, wi);
+	float woDotWh	= dot(wo, wh);
+	float whDotWi	= dot(wh, wi);
+
+	//Fresnell term; models how much light is reflected
+	float ro = material_fresnel;
+	float Fresnel_wi = ro + (1 - ro) * pow((1 - whDotWi), 5);
+
+	//Multifacet Distribution Function, models the density of multifacets with a normal equal to the half vector between the incoming and outgoing light
+	float s = material_shininess;
+	float DistMultifacet_wh = ((s + 2) / (2 * PI)) * pow(nDotWh, s);
+
+	//Shadow / Masking function, models the phenomena where multifactes' incoming or outgoing radiance gets block by other multifacet at grazing angles
+	float outgoing = (nDotWh * nDotWo) / woDotWh;
+	float incoming = (nDotWh * nDotWi) / woDotWh;
+
+	float GShadowing_wiwo = min(1, min(2 * outgoing, 2 * incoming));
+
+	float brdf = (Fresnel_wi * DistMultifacet_wh * GShadowing_wiwo) / (4 * nDotWo * nDotWi);
+
+	return brdf * nDotWi * Li;
+
 	///////////////////////////////////////////////////////////////////////////
 	// Task 3 - Make your shader respect the parameters of our material model.
 	///////////////////////////////////////////////////////////////////////////
 
-	return direct_illum;
+	//return direct_illum;
 
 }
 
