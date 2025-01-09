@@ -125,8 +125,10 @@ struct FboInfo
 		glBindTexture(GL_TEXTURE_2D, colorTextureTarget);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
 		glGenTextures(1, &depthBuffer);
 		glBindTexture(GL_TEXTURE_2D, depthBuffer);
@@ -140,7 +142,17 @@ struct FboInfo
 		// Generate and bind framebuffer
 		///////////////////////////////////////////////////////////////////////
 		// Task 1
-		//...
+		//Generate an ID to handle the memory allocation of the buffer and bind to set the state machine
+		glGenFramebuffers(1, &framebufferId);
+		glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
+
+		// Attach the color textute target to which OpenGl will write color data
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTextureTarget, 0);
+		// Difine to which attactment to draw
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+		// Attach the depth texture
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthBuffer, 0);
 
 		// check if framebuffer is complete
 		isComplete = checkFramebufferComplete();
@@ -240,6 +252,11 @@ void initialize()
 	///////////////////////////////////////////////////////////////////////////
 	int w, h;
 	SDL_GetWindowSize(g_window, &w, &h);
+	const int numFbos = 5;
+	for (size_t i = 0; i < numFbos; i++)
+	{
+		fboList.push_back(FboInfo(w, h));
+	}
 }
 
 
@@ -317,6 +334,8 @@ void display()
 
 	for(int i = 0; i < fboList.size(); i++)
 	{
+		// Each Framebuffer info keeps a record of the size of the window it was first initialized, 
+		// and at everty frame checks is this has changed to update a reallocate the render targets.
 		if(fboList[i].width != w || fboList[i].height != h)
 			fboList[i].resize(w, h);
 	}
@@ -325,6 +344,7 @@ void display()
 	// setup matrices
 	///////////////////////////////////////////////////////////////////////////
 	mat4 securityCamViewMatrix = lookAt(securityCamPos, securityCamPos + securityCamDirection, worldUp);
+	// Notice that the near and far plane values, and well as the Field of view can be different, as it is another POV.
 	mat4 securityCamProjectionMatrix = perspective(radians(30.0f), float(w) / float(h), 15.0f, 1000.0f);
 
 	mat4 projectionMatrix = perspective(radians(45.0f), float(w) / float(h), 10.0f, 1000.0f);
@@ -344,13 +364,26 @@ void display()
 	// draw scene from security camera
 	///////////////////////////////////////////////////////////////////////////
 	// Task 2
-	// ...
+	// Bind the framebuffer to update the state machine
+	glBindFramebuffer(GL_FRAMEBUFFER, fboList[0].framebufferId);
+	glViewport(0,0, fboList[0].width, fboList[0].height); // The size of the window to render
+	glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	drawScene(securityCamViewMatrix, securityCamProjectionMatrix);
+
+	// Use color texture target as a image texture to sample from
+
+	labhelper::Material& screen = landingpadModel->m_materials[8];
+	screen.m_emission_texture.gl_id = fboList[0].colorTextureTarget;
 
 	///////////////////////////////////////////////////////////////////////////
 	// draw scene from camera
 	///////////////////////////////////////////////////////////////////////////
-	glBindFramebuffer(GL_FRAMEBUFFER, 0); // to be replaced with another framebuffer when doing post processing
-	glViewport(0, 0, w, h);
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0); // to be replaced with another framebuffer when doing post processing
+	glBindFramebuffer(GL_FRAMEBUFFER, fboList[1].framebufferId);
+
+	glViewport(0, 0, fboList[1].width, fboList[1].height);
 	glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -358,6 +391,30 @@ void display()
 
 	// camera (obj-model)
 	drawCamera(securityCamViewMatrix, viewMatrix, projectionMatrix);
+
+	// Until this point, the screen will show a balck window, since out default frame buffer has no render data.
+	// The reneder data has been written in the framebuffer [1]. This is an off-screen render target that we can sample latter
+	// To render again to the screen we:
+
+	// Bind the default frame buffer again, set the viewport and clear it
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, w, h);
+	glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	// We draw to a full screen quad now
+	// This process requiers a new pipeline, since we do not need to send any meshes to the GPU, just shade the fragments
+	// of the full-screen quad using the already generated color texture
+
+	glUseProgram(postFxShader); // The new pipeline definition
+	// Set the uniforms for this shader instance
+	labhelper::setUniformSlow(postFxShader, "time", currentTime);
+	labhelper::setUniformSlow(postFxShader, "currentEffect", currentEffect);
+	labhelper::setUniformSlow(postFxShader, "filterSize", filterSizes[filterSize - 1]);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fboList[1].colorTextureTarget);
+	labhelper::drawFullScreenQuad();
 
 	///////////////////////////////////////////////////////////////////////////
 	// Post processing pass(es)
