@@ -167,7 +167,41 @@ void initFullScreenQuad()
 	if(fullScreenQuadVAO == 0)
 	{
 		// Task 4.1
-		// ...
+		// Allocate memory to hold the buffers
+		glGenVertexArrays(1, &fullScreenQuadVAO);
+		glBindVertexArray(fullScreenQuadVAO);
+
+		// Define screen-space coordinates and the triangles indeces
+		const float screenPos[] = {
+		//		x	y	
+		   -1.0f,   1.0f,		// v0
+		   -1.0f,  -1.0f,		// v1
+			1.0f,   1.0f,		// v2
+			1.0f,  -1.0f		// v3
+		};
+
+		GLuint positionBuffer;
+		glGenBuffers(1, &positionBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
+		glBufferData(GL_ARRAY_BUFFER, labhelper::array_length(screenPos) * sizeof(float), screenPos, GL_STATIC_DRAW);
+		// Define the memory layout, we are sending 2D vectors
+		glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0);
+		glEnableVertexAttribArray(0);
+
+		GLuint indexBuffer;
+		const int indices[] =
+		{
+			0, 1, 2, // Triangle 1
+			1, 3, 2	 // Tringle 2
+		};
+
+		// Allocate memory and bind the state machine
+		glGenBuffers(1, &indexBuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+		// Load the data into the buffer
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, labhelper::array_length(indices) * sizeof(int), indices, GL_STATIC_DRAW);
+
+
 	}
 }
 
@@ -180,7 +214,28 @@ void drawFullScreenQuad()
 	// draw a quad at full screen
 	///////////////////////////////////////////////////////////////////////////
 	// Task 4.2
-	// ...
+	
+	//Disabled Depth test
+	//glDisable(GL_DEPTH_TEST);
+	GLboolean depth_test_state;
+	glGetBooleanv(GL_DEPTH_TEST, &depth_test_state); 
+	// Sets the variable to the current state before disabling it
+
+	//if(depth_test_state)
+	glDisable(GL_DEPTH_TEST);
+
+	// Set the shader program to use to draw the VAO
+	glUseProgram(backgroundProgram);
+	// Bind the vertex array object we want to draw
+	glBindVertexArray(fullScreenQuadVAO);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	if (depth_test_state)
+		glEnable(GL_DEPTH_TEST);
+
+	glUseProgram(0);
+
+
 }
 
 
@@ -339,7 +394,11 @@ void display(void)
 	// Task 4.3 - Render a fullscreen quad, to generate the background from the
 	//            environment map.
 	///////////////////////////////////////////////////////////////////////////
-
+	glUseProgram(backgroundProgram);
+	labhelper::setUniformSlow(backgroundProgram, "environment_multiplier", environment_multiplier);
+	labhelper::setUniformSlow(backgroundProgram, "inv_PV", inverse(projectionMatrix * viewMatrix));
+	labhelper::setUniformSlow(backgroundProgram, "camera_pos", camera.position);
+	drawFullScreenQuad();
 	///////////////////////////////////////////////////////////////////////////
 	// Render the .obj models
 	///////////////////////////////////////////////////////////////////////////
