@@ -47,7 +47,8 @@ vec3 grayscale(vec3 rgbSample);
  */
 vec3 toSepiaTone(vec3 rgbSample);
 
-
+// Mosaic
+vec4 mosaic(vec2 coord);
 
 
 void main()
@@ -74,7 +75,7 @@ void main()
 		fragmentColor = vec4(toSepiaTone(blur(mushrooms(gl_FragCoord.xy))), 1.0);
 		break;
 	case 6:
-		fragmentColor = vec4(0.0); // place holder
+		fragmentColor = mosaic(gl_FragCoord.xy);
 		break;
 	case 7:
 		fragmentColor = vec4(0.0); // place holder
@@ -135,4 +136,18 @@ vec3 blur(vec2 coord)
 vec3 grayscale(vec3 rgbSample)
 {
 	return vec3(rgbSample.r * 0.2126 + rgbSample.g * 0.7152 + rgbSample.b * 0.0722);
+}
+
+vec4 mosaic(vec2 coord)
+{
+	// lamba size of the mosaic
+	float mosaicSize = 16.0;
+	//float w = textureSize(frameBufferTexture, 0).x;
+	//float h = textureSize(frameBufferTexture, 0).y;
+	vec2 modCoord = coord - mod(coord, mosaicSize);
+	//vec2( mod(coord.x, w * mosaicSize), mod(coord.y, h * mosaicSize) );
+	vec2 floorCoord = floor(coord / mosaicSize);//mod(coord, mosaicSize);
+
+	//return vec4(textureRect(frameBufferTexture, floorCoord * mosaicSize).rgb, 1.0);
+	return vec4(textureRect(frameBufferTexture, modCoord).rgb, 1.0);
 }
