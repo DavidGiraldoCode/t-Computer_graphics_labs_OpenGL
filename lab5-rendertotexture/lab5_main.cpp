@@ -73,6 +73,10 @@ labhelper::Model* fighterModel = nullptr;
 labhelper::Model* sphereModel = nullptr;
 labhelper::Model* cameraModel = nullptr;
 
+// new model for testing
+labhelper::Model* newModel = nullptr;
+
+
 float fighterRotateSpeed = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -123,6 +127,11 @@ struct FboInfo
 		// Generate two textures and set filter parameters (no storage allocated yet)
 		glGenTextures(1, &colorTextureTarget);
 		glBindTexture(GL_TEXTURE_2D, colorTextureTarget);
+
+		///////// Render Doc Labels
+		glObjectLabel(GL_TEXTURE, colorTextureTarget, -1, "color_texture_target");
+		/////////
+
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -132,6 +141,11 @@ struct FboInfo
 
 		glGenTextures(1, &depthBuffer);
 		glBindTexture(GL_TEXTURE_2D, depthBuffer);
+
+		///////// Render Doc Labels
+		glObjectLabel(GL_TEXTURE, depthBuffer, -1, "depth_buffer_target");
+		/////////
+
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -145,6 +159,10 @@ struct FboInfo
 		//Generate an ID to handle the memory allocation of the buffer and bind to set the state machine
 		glGenFramebuffers(1, &framebufferId);
 		glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
+
+		///////// Render Doc Labels
+		glObjectLabel(GL_FRAMEBUFFER, framebufferId, -1, "off_screen_framebuffer");
+		/////////
 
 		// Attach the color textute target to which OpenGl will write color data
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTextureTarget, 0);
@@ -219,6 +237,9 @@ void initialize()
 	cameraModel = labhelper::loadModelFromOBJ("../scenes/wheatley.obj");
 	fighterModel = labhelper::loadModelFromOBJ("../scenes/space-ship.obj");
 
+	// New model
+	newModel = labhelper::loadModelFromOBJ("../scenes/bunny.obj");
+
 	// load and set up default shader
 	backgroundProgram = labhelper::loadShaderProgram("../lab5-rendertotexture/background.vert",
 	                                                 "../lab5-rendertotexture/background.frag");
@@ -226,6 +247,12 @@ void initialize()
 	                                             "../lab5-rendertotexture/shading.frag");
 	postFxShader = labhelper::loadShaderProgram("../lab5-rendertotexture/postFx.vert",
 	                                            "../lab5-rendertotexture/postFx.frag");
+
+	// Labeling Shader programs for Render Doc
+	glObjectLabel(GL_PROGRAM, backgroundProgram, -1,	"BackgroundProgram");
+	glObjectLabel(GL_PROGRAM, shaderProgram, -1,		"MainShaderProgramProgram");
+	glObjectLabel(GL_PROGRAM, postFxShader, -1,			"PostFxShader");
+
 
 	///////////////////////////////////////////////////////////////////////////
 	// Load environment map
@@ -239,11 +266,11 @@ void initialize()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
-	environmentMap = labhelper::loadHdrTexture("../scenes/envmaps/" + envmap_base_name + ".hdr");
+	environmentMap = labhelper::loadHdrTexture("../scenes/envmaps/" + envmap_base_name + ".hdr", "environment_map_texture");
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
-	irradianceMap = labhelper::loadHdrTexture("../scenes/envmaps/" + envmap_base_name + "_irradiance.hdr");
+	irradianceMap = labhelper::loadHdrTexture("../scenes/envmaps/" + envmap_base_name + "_irradiance.hdr", "irradiance_map_texture");
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
@@ -265,42 +292,64 @@ void initialize()
 ///////////////////////////////////////////////////////////////////////////////
 void drawScene(const mat4& view, const mat4& projection)
 {
-	glUseProgram(backgroundProgram);
-	labhelper::setUniformSlow(backgroundProgram, "environment_multiplier", environment_multiplier);
-	labhelper::setUniformSlow(backgroundProgram, "inv_PV", inverse(projection * view));
-	labhelper::setUniformSlow(backgroundProgram, "camera_pos", cameraPosition);
-	labhelper::drawFullScreenQuad();
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "FULL_SCREEN_QUAD");
+		glUseProgram(backgroundProgram);
+		labhelper::setUniformSlow(backgroundProgram, "environment_multiplier", environment_multiplier);
+		labhelper::setUniformSlow(backgroundProgram, "inv_PV", inverse(projection * view));
+		labhelper::setUniformSlow(backgroundProgram, "camera_pos", cameraPosition);
+		labhelper::drawFullScreenQuad();
+		glPopDebugGroup();
+	}
 
-	glUseProgram(shaderProgram);
-	// Light source
-	vec4 viewSpaceLightPosition = view * vec4(lightPosition, 1.0f);
-	labhelper::setUniformSlow(shaderProgram, "point_light_color", point_light_color);
-	labhelper::setUniformSlow(shaderProgram, "point_light_intensity_multiplier",
-	                          point_light_intensity_multiplier);
-	labhelper::setUniformSlow(shaderProgram, "viewSpaceLightPosition", vec3(viewSpaceLightPosition));
+	{	
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "LANDING_PAD");
+		glUseProgram(shaderProgram);
+		// Light source
+		vec4 viewSpaceLightPosition = view * vec4(lightPosition, 1.0f);
+		labhelper::setUniformSlow(shaderProgram, "point_light_color", point_light_color);
+		labhelper::setUniformSlow(shaderProgram, "point_light_intensity_multiplier",
+								  point_light_intensity_multiplier);
+		labhelper::setUniformSlow(shaderProgram, "viewSpaceLightPosition", vec3(viewSpaceLightPosition));
 
-	// Environment
-	labhelper::setUniformSlow(shaderProgram, "environment_multiplier", environment_multiplier);
+		// Environment
+		labhelper::setUniformSlow(shaderProgram, "environment_multiplier", environment_multiplier);
 
-	// camera
-	labhelper::setUniformSlow(shaderProgram, "viewInverse", inverse(view));
+		// camera
+		labhelper::setUniformSlow(shaderProgram, "viewInverse", inverse(view));
 
-	// landing pad
-	mat4 modelMatrix(1.0f);
-	labhelper::setUniformSlow(shaderProgram, "modelViewProjectionMatrix", projection * view * modelMatrix);
-	labhelper::setUniformSlow(shaderProgram, "modelViewMatrix", view * modelMatrix);
-	labhelper::setUniformSlow(shaderProgram, "normalMatrix", inverse(transpose(view * modelMatrix)));
+		// landing pad
+		mat4 modelMatrix(1.0f);
+		labhelper::setUniformSlow(shaderProgram, "modelViewProjectionMatrix", projection * view * modelMatrix);
+		labhelper::setUniformSlow(shaderProgram, "modelViewMatrix", view * modelMatrix);
+		labhelper::setUniformSlow(shaderProgram, "normalMatrix", inverse(transpose(view * modelMatrix)));
 
-	labhelper::render(landingpadModel);
+		labhelper::render(landingpadModel);
+		glPopDebugGroup();
+	}
 
-	// Fighter
-	mat4 fighterModelMatrix = translate(10.0f * worldUp) * rotate(currentTime * fighterRotateSpeed, worldUp);
-	labhelper::setUniformSlow(shaderProgram, "modelViewProjectionMatrix",
-	                          projection * view * fighterModelMatrix);
-	labhelper::setUniformSlow(shaderProgram, "modelViewMatrix", view * fighterModelMatrix);
-	labhelper::setUniformSlow(shaderProgram, "normalMatrix", inverse(transpose(view * fighterModelMatrix)));
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "FIGHTER");
+		// Fighter
+		mat4 fighterModelMatrix = translate(10.0f * worldUp) * rotate(currentTime * fighterRotateSpeed, worldUp);
+		labhelper::setUniformSlow(shaderProgram, "modelViewProjectionMatrix", projection * view * fighterModelMatrix);
+		labhelper::setUniformSlow(shaderProgram, "modelViewMatrix", view * fighterModelMatrix);
+		labhelper::setUniformSlow(shaderProgram, "normalMatrix", inverse(transpose(view * fighterModelMatrix)));
 
-	labhelper::render(fighterModel);
+		labhelper::render(fighterModel);
+		glPopDebugGroup();
+	}
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "NEW_MODEL");
+
+		mat4 newModelMatrix = translate(10.0f * worldUp) * rotate(currentTime * fighterRotateSpeed, worldUp);
+		labhelper::setUniformSlow(shaderProgram, "modelViewProjectionMatrix", projection * view * newModelMatrix);
+		labhelper::setUniformSlow(shaderProgram, "modelViewMatrix", view * newModelMatrix);
+		labhelper::setUniformSlow(shaderProgram, "normalMatrix", inverse(transpose(view * newModelMatrix)));
+
+		labhelper::render(newModel); // Is not making the draw call
+		glPopDebugGroup();
+	}
 }
 
 
@@ -332,11 +381,11 @@ void display()
 	int w, h;
 	SDL_GetWindowSize(g_window, &w, &h);
 
-	for(int i = 0; i < fboList.size(); i++)
+	for (int i = 0; i < fboList.size(); i++)
 	{
 		// Each Framebuffer info keeps a record of the size of the window it was first initialized, 
 		// and at everty frame checks is this has changed to update a reallocate the render targets.
-		if(fboList[i].width != w || fboList[i].height != h)
+		if (fboList[i].width != w || fboList[i].height != h)
 			fboList[i].resize(w, h);
 	}
 
@@ -365,13 +414,19 @@ void display()
 	///////////////////////////////////////////////////////////////////////////
 	// Task 2
 	// Bind the framebuffer to update the state machine
-	glBindFramebuffer(GL_FRAMEBUFFER, fboList[0].framebufferId);
-	glViewport(0,0, fboList[0].width, fboList[0].height); // The size of the window to render
-	glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	{
 
-	drawScene(securityCamViewMatrix, securityCamProjectionMatrix);
-
+		glBindFramebuffer(GL_FRAMEBUFFER, fboList[0].framebufferId);
+		glViewport(0, 0, fboList[0].width, fboList[0].height); // The size of the window to render
+		glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "OFF_SCREEN_SECURITY_CAMERA");
+		
+		drawScene(securityCamViewMatrix, securityCamProjectionMatrix);
+		
+		glPopDebugGroup();
+	}
 	// Use color texture target as a image texture to sample from
 
 	labhelper::Material& screen = landingpadModel->m_materials[8];
@@ -381,40 +436,53 @@ void display()
 	// draw scene from camera
 	///////////////////////////////////////////////////////////////////////////
 	//glBindFramebuffer(GL_FRAMEBUFFER, 0); // to be replaced with another framebuffer when doing post processing
-	glBindFramebuffer(GL_FRAMEBUFFER, fboList[1].framebufferId);
+	
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "OFF_SCREEN_CAMERA");
 
-	glViewport(0, 0, fboList[1].width, fboList[1].height);
-	glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBindFramebuffer(GL_FRAMEBUFFER, fboList[1].framebufferId);
+		glViewport(0, 0, fboList[1].width, fboList[1].height);
+		glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	drawScene(viewMatrix, projectionMatrix); // using both shaderProgram and backgroundProgram
+		drawScene(viewMatrix, projectionMatrix); // using both shaderProgram and backgroundProgram
 
-	// camera (obj-model)
-	drawCamera(securityCamViewMatrix, viewMatrix, projectionMatrix);
+		// camera (obj-model)
+		drawCamera(securityCamViewMatrix, viewMatrix, projectionMatrix);
+
+		glPopDebugGroup();
+	}
 
 	// Until this point, the screen will show a balck window, since out default frame buffer has no render data.
 	// The reneder data has been written in the framebuffer [1]. This is an off-screen render target that we can sample latter
 	// To render again to the screen we:
 
-	// Bind the default frame buffer again, set the viewport and clear it
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0, 0, w, h);
-	glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "COMPOSITE");
+
+		// Bind the default frame buffer again, set the viewport and clear it
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, w, h);
+		glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	// We draw to a full screen quad now
-	// This process requiers a new pipeline, since we do not need to send any meshes to the GPU, just shade the fragments
-	// of the full-screen quad using the already generated color texture
+		// We draw to a full screen quad now
+		// This process requiers a new pipeline, since we do not need to send any meshes to the GPU, just shade the fragments
+		// of the full-screen quad using the already generated color texture
 
-	glUseProgram(postFxShader); // The new pipeline definition
-	// Set the uniforms for this shader instance
-	labhelper::setUniformSlow(postFxShader, "time", currentTime);
-	labhelper::setUniformSlow(postFxShader, "currentEffect", currentEffect);
-	labhelper::setUniformSlow(postFxShader, "filterSize", filterSizes[filterSize - 1]);
+		glUseProgram(postFxShader); // The new pipeline definition
+		// Set the uniforms for this shader instance
+		labhelper::setUniformSlow(postFxShader, "time", currentTime);
+		labhelper::setUniformSlow(postFxShader, "currentEffect", currentEffect);
+		labhelper::setUniformSlow(postFxShader, "filterSize", filterSizes[filterSize - 1]);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fboList[1].colorTextureTarget);
-	labhelper::drawFullScreenQuad();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fboList[1].colorTextureTarget);
+		labhelper::drawFullScreenQuad();
+
+		glPopDebugGroup();
+	}
+
 
 	///////////////////////////////////////////////////////////////////////////
 	// Post processing pass(es)

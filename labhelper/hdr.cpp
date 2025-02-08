@@ -31,6 +31,28 @@ GLuint loadHdrTexture(const std::string& filename)
 {
 	GLuint texId;
 	glGenTextures(1, &texId);
+	// Adding an object labled for debugging
+	
+	//
+	glBindTexture(GL_TEXTURE_2D, texId);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	HDRImage image(filename);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, image.width, image.height, 0, GL_RGB, GL_FLOAT, image.data);
+
+	return texId;
+}
+GLuint loadHdrTexture(const std::string& filename, const char* label)
+{
+	GLuint texId;
+	glGenTextures(1, &texId);
+	// Adding an object labled for debugging
+	glObjectLabel(GL_TEXTURE, texId, -1, label);
+	//
 	glBindTexture(GL_TEXTURE_2D, texId);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
